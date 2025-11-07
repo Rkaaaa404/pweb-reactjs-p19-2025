@@ -4,12 +4,23 @@ import mainRouter from './router/indexRouter';
 import cors from 'cors';
 
 const app = express();
+
+// Middleware untuk logging request
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  console.log('Headers:', req.headers);
+  console.log('Body:', req.body);
+  next();
+});
+
 app.use(express.json());
+
+// Simplified CORS - allow all for development
 app.use(cors({
-  origin: 'http://localhost:5173', // Vite's default port
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  origin: '*',
+  credentials: false,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
 }));
 
 app.get('/health-check', (req, res) => {

@@ -234,6 +234,13 @@ export const getBookById = async (req: Request, res: Response) => {
 // PATCH /books/:id
 export const updateBook = async (req: Request, res: Response) => {
   const { id } = req.params;
+  
+  console.log('=== UPDATE BOOK REQUEST ===');
+  console.log('Book ID:', id);
+  console.log('Request method:', req.method);
+  console.log('Request body:', JSON.stringify(req.body, null, 2));
+  console.log('===========================');
+  
   // Ambil semua field yang mungkin di-update
   const {
     title,

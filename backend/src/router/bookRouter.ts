@@ -17,7 +17,8 @@ const router = Router();
 router.post('/', protect, createBook);
 router.get('/', protect, getAllBooks);
 router.get('/:id', protect, getBookById);
-router.patch('/:id', protect, updateBook);
+router.put('/:id', protect, updateBook);
+router.patch('/:id', protect, updateBook);  // Support both PUT and PATCH
 router.delete('/:id', protect, deleteBook);
 // router.get('/genre/:id', protect, getBooksByGenre); // Kalo masih mau pake
 

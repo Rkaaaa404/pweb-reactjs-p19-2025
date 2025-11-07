@@ -7,11 +7,19 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 export const register = async (req: Request, res: Response) => {
   const { email, password, username } = req.body;
 
+  console.log('Register request received:', { email, username, hasPassword: !!password });
+
   // Validasi simpel
   if (!email || !password) {
     return res
       .status(400)
       .json({ success: false, message: 'Email and password are required' });
+  }
+
+  if (!username) {
+    return res
+      .status(400)
+      .json({ success: false, message: 'Username is required' });
   }
 
   try {
@@ -22,9 +30,11 @@ export const register = async (req: Request, res: Response) => {
       data: {
         email: email,
         password: hashedPassword,
-        username: username, // username ini opsional [cite: 1]
+        username: username,
       },
     });
+
+    console.log('User created successfully:', newUser.id);
 
     // Balikin data sesuai spek Postman
     return res.status(201).json({
@@ -40,13 +50,14 @@ export const register = async (req: Request, res: Response) => {
     // Error handling buat kalo email-nya udah ada (unique constraint)
     if (error instanceof PrismaClientKnownRequestError) {
       if (error.code === 'P2002') {
+        console.log('Email already exists:', email);
         return res
           .status(400)
           .json({ success: false, message: 'Email already exists' });
       }
     }
     // Error generik
-    console.error(error);
+    console.error('Registration error:', error);
     return res
       .status(500)
       .json({ success: false, message: 'Internal server error' });
@@ -56,6 +67,8 @@ export const register = async (req: Request, res: Response) => {
 // POST login
 export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
+
+  console.log('Login request received:', { email, hasPassword: !!password });
 
   if (!email || !password) {
     return res
@@ -69,6 +82,7 @@ export const login = async (req: Request, res: Response) => {
     });
 
     if (!user) {
+      console.log('User not found:', email);
       return res
         .status(401)
         .json({ success: false, message: 'Invalid credentials' });
@@ -77,12 +91,15 @@ export const login = async (req: Request, res: Response) => {
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
+      console.log('Invalid password for user:', email);
       return res
         .status(401)
         .json({ success: false, message: 'Invalid credentials' });
     }
 
     const token = signToken({ id: user.id });
+
+    console.log('Login successful for user:', user.id);
 
     return res.status(200).json({
       success: true,
@@ -92,7 +109,7 @@ export const login = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error(error);
+    console.error('Login error:', error);
     return res
       .status(500)
       .json({ success: false, message: 'Internal server error' });

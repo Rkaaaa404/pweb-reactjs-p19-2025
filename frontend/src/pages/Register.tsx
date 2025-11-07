@@ -7,6 +7,7 @@ const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -23,8 +24,15 @@ const Register = () => {
 
     try {
       await api.post('/auth/register', { username, email, password });
-      alert('Registrasi berhasil! Silakan login.');
-      navigate('/login');
+      
+      // Show success message
+      setSuccessMessage('Registrasi berhasil! Silakan login.');
+      setError(null);
+      
+      // Auto redirect after 2 seconds
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Registrasi gagal, coba lagi.');
     } finally {
@@ -49,6 +57,20 @@ const Register = () => {
             {error && (
               <div className="mb-4 text-center text-sm text-red-600">
                 {error}
+              </div>
+            )}
+            
+            {successMessage && (
+              <div className="mb-4">
+                <div className="bg-green-50 border border-green-200 rounded-md p-3">
+                  <div className="flex items-center justify-center">
+                    <svg className="w-4 h-4 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <div className="text-green-800 text-sm font-medium">{successMessage}</div>
+                  </div>
+                  <div className="text-green-700 text-xs text-center mt-1">Mengalihkan ke halaman login...</div>
+                </div>
               </div>
             )}
             <div className="mb-4">
@@ -84,10 +106,10 @@ const Register = () => {
             
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !!successMessage}
               className="w-full bg-bookit-primary text-bookit-white py-3 px-4 rounded-md font-medium hover:bg-bookit-dark disabled:bg-gray-400"
             >
-              {loading ? 'Loading...' : 'Daftar'}
+              {loading ? 'Loading...' : successMessage ? 'Berhasil!' : 'Daftar'}
             </button>
             
             <p className="mt-4 text-center text-sm text-bookit-text-medium">
