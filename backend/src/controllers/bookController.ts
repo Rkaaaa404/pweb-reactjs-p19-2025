@@ -40,7 +40,7 @@ export const createBook = async (req: Request, res: Response) => {
 
   // Validasi tipe data
   const priceNum = parseFloat(price as any);
-  const stockNum = Number(stock_key); // Pakai Number() dulu
+  const stockNum = Number(stock); // Fix: Changed from stock_key to stock
   const pubYearNum = publicationYear
     ? parseInt(publicationYear as any, 10)
     : null;
