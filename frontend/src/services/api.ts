@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000', 
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080', 
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -11,7 +11,7 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    console.log('Making request to:', `${config.baseURL || 'http://localhost:5000'}${config.url || ''}`);
+    console.log('Making request to:', `${config.baseURL || 'http://localhost:8080'}${config.url || ''}`);
     console.log('Request data:', config.data);
     
     const token = localStorage.getItem('authToken');

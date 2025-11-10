@@ -95,32 +95,7 @@ const BookDetail = () => {
     setQuantity(1);
   };
 
-  const handleBuyNow = () => {
-    if (!isAuthenticated) {
-      setError('Silakan login terlebih dahulu untuk membeli buku');
-      setTimeout(() => setError(null), 3000);
-      return;
-    }
 
-    // TODO: Implement buy now functionality
-    // Steps to implement:
-    // 1. Check stock availability
-    // 2. Create a temporary cart with this item
-    // 3. Redirect to checkout page
-    // 4. Process payment
-    // 5. Create transaction record
-    // 6. Update book stock
-    // 7. Clear cart
-    // 8. Redirect to transaction success page
-    
-    setSuccessMessage(`Fitur "Beli Sekarang" belum diimplementasi. Silakan gunakan "Tambah ke Keranjang" terlebih dahulu.`);
-    setError(null);
-    
-    // Clear message after 5 seconds
-    setTimeout(() => {
-      setSuccessMessage(null);
-    }, 5000);
-  };
 
   if (loading) {
     return (
@@ -277,18 +252,12 @@ const BookDetail = () => {
                     </div>
                   </div>
 
-                  <div className="flex space-x-4">
+                  <div className="flex">
                     <button
                       onClick={handleAddToCart}
-                      className="flex-1 bg-gray-100 text-bookit-dark py-3 px-6 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-                    >
-                      Tambah ke Keranjang
-                    </button>
-                    <button
-                      onClick={handleBuyNow}
                       className="flex-1 bg-bookit-primary text-white py-3 px-6 rounded-lg font-medium hover:bg-bookit-dark transition-colors"
                     >
-                      Beli Sekarang
+                      Tambah ke Keranjang
                     </button>
                   </div>
                 </div>
