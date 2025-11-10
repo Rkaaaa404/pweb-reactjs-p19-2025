@@ -11,7 +11,9 @@ interface TransactionItem {
     id: string;
     title: string;
     writer: string;
+    publisher: string;
     imageUrl?: string;
+    price: number;
   };
 }
 
@@ -19,9 +21,13 @@ interface TransactionDetail {
   id: string;
   totalPrice: number;
   totalAmount: number;
-  status: string;
   createdAt: string;
   updatedAt: string;
+  user: {
+    id: string;
+    username: string;
+    email: string;
+  };
   items: TransactionItem[];
 }
 
@@ -71,7 +77,6 @@ const TransactionDetail = () => {
     setLoading(true);
     setError(null);
     try {
-      // TODO: Update API endpoint sesuai dengan backend implementation
       const response = await api.get(`/transactions/${transactionId}`);
       setTransaction(response.data.data);
     } catch (err: any) {
@@ -97,19 +102,9 @@ const TransactionDetail = () => {
     });
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'completed':
-      case 'success':
-        return 'bg-green-100 text-green-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'failed':
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
+  const getStatusColor = () => {
+    // All transactions are completed in our system
+    return 'bg-green-100 text-green-800';
   };
 
   if (loading) {
@@ -182,8 +177,8 @@ const TransactionDetail = () => {
               <p className="text-bookit-text-medium">ID: #{transaction.id}</p>
             </div>
             <div className="mt-4 sm:mt-0">
-              <span className={`inline-block px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(transaction.status)}`}>
-                {transaction.status || 'Completed'}
+              <span className={`inline-block px-3 py-1 text-sm font-medium rounded-full ${getStatusColor()}`}>
+                Completed
               </span>
             </div>
           </div>
@@ -293,20 +288,6 @@ const TransactionDetail = () => {
               </button>
             </div>
           </div>
-        </div>
-
-        {/* TODO Note for Developer */}
-        <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <h4 className="font-medium text-yellow-800 mb-2">🚧 TODO untuk Developer</h4>
-          <p className="text-sm text-yellow-700 mb-2">
-            API endpoint untuk detail transaksi perlu diimplementasikan di backend:
-          </p>
-          <ul className="text-xs text-yellow-600 space-y-1">
-            <li>• GET /api/transactions/:id - Endpoint untuk get detail transaksi</li>
-            <li>• Pastikan endpoint mengembalikan data items dengan relasi ke books</li>
-            <li>• Implementasi authorization agar user hanya bisa melihat transaksi miliknya</li>
-            <li>• Tambahkan status transaksi dan timestamp yang lengkap</li>
-          </ul>
         </div>
       </div>
     </div>

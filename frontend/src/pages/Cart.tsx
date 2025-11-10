@@ -1,13 +1,17 @@
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import api from '../services/api';
 
 const Cart = () => {
   const { state, removeFromCart, updateQuantity, clearCart } = useCart();
   const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showClearModal, setShowClearModal] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   // Redirect to login if not authenticated
   if (!isAuthenticated) {
@@ -67,21 +71,61 @@ const Cart = () => {
     setTimeout(() => setSuccessMessage(null), 3000);
   };
 
-  const handleCheckout = () => {
-    // TODO: Implement checkout functionality
-    // Steps to implement:
-    // 1. Validate cart items and stock availability
-    // 2. Calculate total with shipping/tax if applicable
-    // 3. Create checkout session
-    // 4. Show payment form/gateway
-    // 5. Process payment
-    // 6. Create transaction record in database
-    // 7. Update book stocks
-    // 8. Clear cart
-    // 9. Send confirmation email
-    // 10. Redirect to success page
-    
-    alert(`TODO: Implement Checkout\n\nFitur checkout belum diimplementasi.\nSilakan implementasikan:\n- Payment gateway integration\n- Transaction processing\n- Stock management\n- Order confirmation\n\nTotal yang akan dibayar: Rp ${state.totalPrice.toLocaleString()}`);
+  const handleCheckout = async () => {
+    if (state.items.length === 0) {
+      setCheckoutError('Keranjang kosong. Tambahkan item terlebih dahulu.');
+      return;
+    }
+
+    setIsCheckingOut(true);
+    setCheckoutError(null);
+
+    try {
+      // Format cart items for backend API
+      const items = state.items.map(item => ({
+        bookId: item.id,
+        quantity: item.quantity
+      }));
+
+      // Call checkout API
+      const response = await api.post('/transactions', {
+        items: items
+      });
+
+      if (response.data.success) {
+        // Checkout berhasil
+        const transactionId = response.data.data.id;
+        
+        // Clear cart after successful transaction
+        clearCart();
+        
+        // Show success message
+        setSuccessMessage('Transaksi berhasil! Redirecting...');
+        
+        // Redirect to transaction detail
+        setTimeout(() => {
+          navigate(`/transactions/${transactionId}`);
+        }, 1500);
+      }
+    } catch (error: any) {
+      console.error('Checkout error:', error);
+      
+      let errorMessage = 'Terjadi kesalahan saat memproses transaksi.';
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.status === 400) {
+        errorMessage = 'Data transaksi tidak valid. Periksa kembali item di keranjang.';
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Sesi login telah berakhir. Silakan login kembali.';
+      } else if (error.response?.status === 404) {
+        errorMessage = 'Beberapa item tidak ditemukan. Periksa kembali keranjang Anda.';
+      }
+      
+      setCheckoutError(errorMessage);
+    } finally {
+      setIsCheckingOut(false);
+    }
   };
 
   return (
@@ -110,6 +154,13 @@ const Cart = () => {
         {successMessage && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
             <p className="text-green-800">{successMessage}</p>
+          </div>
+        )}
+
+        {/* Checkout Error Message */}
+        {checkoutError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <p className="text-red-800">{checkoutError}</p>
           </div>
         )}
 
@@ -227,9 +278,20 @@ const Cart = () => {
                 <div className="space-y-3">
                   <button
                     onClick={handleCheckout}
-                    className="w-full bg-bookit-primary text-white py-3 px-4 rounded-lg font-medium hover:bg-bookit-dark transition-colors"
+                    disabled={isCheckingOut || state.items.length === 0}
+                    className="w-full bg-bookit-primary text-white py-3 px-4 rounded-lg font-medium hover:bg-bookit-dark disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                   >
-                    Checkout
+                    {isCheckingOut ? (
+                      <span className="flex items-center justify-center space-x-2">
+                        <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Memproses Checkout...</span>
+                      </span>
+                    ) : (
+                      `Checkout (${state.totalItems} item)`
+                    )}
                   </button>
                   <Link
                     to="/catalog"
@@ -238,32 +300,6 @@ const Cart = () => {
                     Lanjut Belanja
                   </Link>
                 </div>
-
-                {/* 
-                  TODO: IMPLEMENTASI CHECKOUT - Langkah-langkah detail:
-                  
-                  1. BACKEND:
-                     - Buat API endpoint POST /api/transactions untuk checkout
-                     - Validasi stock availability sebelum checkout
-                     - Kurangi stock di database setelah transaksi berhasil
-                     - Return transaction ID untuk redirect
-                  
-                  2. FRONTEND:
-                     - Tambahkan loading state saat checkout
-                     - Handle error response (stock habis, payment gagal, dll)
-                     - Kosongkan cart setelah checkout sukses
-                     - Redirect ke /transactions/:id setelah berhasil
-                  
-                  3. PAYMENT INTEGRATION:
-                     - Integrate payment gateway (Midtrans recommended)
-                     - Handle payment success/failure callbacks
-                     - Update transaction status based on payment result
-                  
-                  4. ERROR HANDLING:
-                     - Rollback stock jika payment gagal
-                     - Show user-friendly error messages
-                     - Retry mechanism untuk network errors
-                */}
               </div>
             </div>
           </div>

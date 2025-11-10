@@ -22,11 +22,11 @@ function App() {
       {/* Routes dengan Navbar & Footer */}
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
-        <Route path="/catalog" element={<BooksCatalog />} />
-        <Route path="/books/:id" element={<BookDetail />} />
         
         {/* Protected Routes */}
         <Route element={<ProtectedRoute />}>
+          <Route path="/catalog" element={<BooksCatalog />} />
+          <Route path="/books/:id" element={<BookDetail />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/transactions" element={<TransactionList />} />
           <Route path="/transactions/:id" element={<TransactionDetail />} />

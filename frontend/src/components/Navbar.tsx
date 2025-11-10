@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useState, useEffect, useRef } from 'react';
@@ -9,12 +9,21 @@ import cartIcon from '../assets/shoping-cart.png';
 const Navbar = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const { state } = useCart();
+  const navigate = useNavigate();
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = () => {
     logout();
     setShowProfileDropdown(false);
+  };
+
+  const handleProtectedRoute = (route: string) => {
+    if (!isAuthenticated) {
+      navigate('/login');
+    } else {
+      navigate(route);
+    }
   };
 
   // Close dropdown when clicking outside
@@ -43,20 +52,18 @@ const Navbar = () => {
             
             {/* Nav Links - Moved inside the left section */}
             <div className="hidden sm:flex sm:space-x-8">
-              <Link
-                to="/catalog"
+              <button
+                onClick={() => handleProtectedRoute('/catalog')}
                 className="text-bookit-text-medium hover:text-bookit-dark inline-flex items-center text-sm font-medium"
               >
                 Katalog
-              </Link>
-              {isAuthenticated && (
-                <Link
-                  to="/manage-books"
-                  className="text-bookit-text-medium hover:text-bookit-dark inline-flex items-center text-sm font-medium"
-                >
-                  Manajemen Buku
-                </Link>
-              )}
+              </button>
+              <button
+                onClick={() => handleProtectedRoute('/manage-books')}
+                className="text-bookit-text-medium hover:text-bookit-dark inline-flex items-center text-sm font-medium"
+              >
+                Manajemen Buku
+              </button>
             </div>
           </div>
 

@@ -3,13 +3,31 @@ import api from '../services/api';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
+interface TransactionItem {
+  id: string;
+  quantity: number;
+  price: number;
+  book: {
+    id: string;
+    title: string;
+    imageUrl?: string;
+  };
+}
+
 interface Transaction {
   id: string;
   totalPrice: number;
   totalAmount: number;
-  status: string;
   createdAt: string;
   updatedAt: string;
+  items: TransactionItem[];
+}
+
+interface TransactionMeta {
+  page: number;
+  limit: number;
+  totalItems: number;
+  totalPages: number;
 }
 
 const TransactionsList = () => {
@@ -17,6 +35,12 @@ const TransactionsList = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [meta, setMeta] = useState<TransactionMeta>({
+    page: 1,
+    limit: 5,
+    totalItems: 0,
+    totalPages: 0
+  });
   
   // Search and Filter States
   const [searchId, setSearchId] = useState('');
@@ -61,9 +85,34 @@ const TransactionsList = () => {
       setLoading(true);
       setError(null);
       try {
-        // TODO: Update API endpoint sesuai dengan backend implementation
-        const response = await api.get('/transactions');
+        // Build query parameters
+        const params = new URLSearchParams({
+          page: currentPage.toString(),
+          limit: itemsPerPage.toString(),
+        });
+        
+        // Add search parameter if searching by ID
+        if (searchId.trim()) {
+          params.append('search', searchId.trim());
+        }
+        
+        // Add sort parameters
+        if (sortBy === 'id') {
+          params.append('sortById', sortOrder);
+        } else if (sortBy === 'amount') {
+          params.append('sortByAmount', sortOrder);
+        } else if (sortBy === 'price') {
+          params.append('sortByPrice', sortOrder);
+        }
+        // Default sorting by date is handled in backend
+        
+        const response = await api.get(`/transactions?${params.toString()}`);
         setTransactions(response.data.data || []);
+        
+        // Update meta information from backend response
+        if (response.data.meta) {
+          setMeta(response.data.meta);
+        }
       } catch (err: any) {
         if (err.response?.status === 404) {
           setTransactions([]); // No transactions found
@@ -75,42 +124,35 @@ const TransactionsList = () => {
       }
     };
     fetchTransactions();
-  }, []);
+  }, [currentPage, searchId, sortBy, sortOrder]);
 
   // Filter transactions based on search
-  const filteredTransactions = transactions.filter(transaction =>
-    searchId === '' || transaction.id.toLowerCase().includes(searchId.toLowerCase())
-  );
+  // Note: Search is now handled by backend, so we don't need client-side filtering
+  const displayedTransactions = transactions;
 
-  // Sort transactions
-  const sortedTransactions = [...filteredTransactions].sort((a, b) => {
-    let comparison = 0;
-    
-    switch (sortBy) {
-      case 'id':
-        comparison = a.id.localeCompare(b.id);
-        break;
-      case 'amount':
-        comparison = a.totalAmount - b.totalAmount;
-        break;
-      case 'price':
-        comparison = a.totalPrice - b.totalPrice;
-        break;
-      case 'date':
-        comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        break;
-      default:
-        comparison = 0;
-    }
-    
-    return sortOrder === 'asc' ? comparison : -comparison;
-  });
+  // Sort transactions 
+  // Note: Sorting is now handled by backend, so we don't need client-side sorting
+  const sortedTransactions = displayedTransactions;
 
   // Pagination
-  const totalPages = Math.ceil(sortedTransactions.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentTransactions = sortedTransactions.slice(startIndex, endIndex);
+  // Note: Pagination is now handled by backend
+  const totalPages = meta.totalPages;
+  const currentTransactions = sortedTransactions;
+
+  const handleSearchChange = (value: string) => {
+    setSearchId(value);
+    setCurrentPage(1); // Reset to first page when searching
+  };
+
+  const handleSortChange = (newSortBy: string) => {
+    setSortBy(newSortBy as any);
+    setCurrentPage(1); // Reset to first page when changing sort
+  };
+
+  const handleSortOrderChange = (newSortOrder: string) => {
+    setSortOrder(newSortOrder as any);
+    setCurrentPage(1); // Reset to first page when changing sort order
+  };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -164,10 +206,7 @@ const TransactionsList = () => {
               <input
                 type="text"
                 value={searchId}
-                onChange={(e) => {
-                  setSearchId(e.target.value);
-                  setCurrentPage(1); // Reset to first page when searching
-                }}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 placeholder="Masukkan ID transaksi..."
                 className="w-full px-3 py-2 border border-bookit-border rounded-lg focus:outline-none focus:ring-2 focus:ring-bookit-primary focus:border-transparent"
               />
@@ -180,7 +219,7 @@ const TransactionsList = () => {
               </label>
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
+                onChange={(e) => handleSortChange(e.target.value)}
                 className="w-full px-3 py-2 border border-bookit-border rounded-lg focus:outline-none focus:ring-2 focus:ring-bookit-primary focus:border-transparent"
               >
                 <option value="date">Tanggal</option>
@@ -197,7 +236,7 @@ const TransactionsList = () => {
               </label>
               <select
                 value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value as any)}
+                onChange={(e) => handleSortOrderChange(e.target.value)}
                 className="w-full px-3 py-2 border border-bookit-border rounded-lg focus:outline-none focus:ring-2 focus:ring-bookit-primary focus:border-transparent"
               >
                 <option value="desc">Terbaru ke Terlama</option>
@@ -210,8 +249,9 @@ const TransactionsList = () => {
         {/* Results Summary */}
         <div className="mb-4">
           <p className="text-bookit-text-medium">
-            Menampilkan {currentTransactions.length} dari {sortedTransactions.length} transaksi
+            Menampilkan {currentTransactions.length} dari {meta.totalItems} transaksi
             {searchId && ` untuk pencarian "${searchId}"`}
+            {` (Halaman ${meta.page} dari ${meta.totalPages})`}
           </p>
         </div>
 
@@ -223,9 +263,9 @@ const TransactionsList = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex-grow">
                     <div className="flex items-center space-x-2 mb-2">
-                      <h3 className="font-semibold text-bookit-dark">#{transaction.id}</h3>
+                      <h3 className="font-semibold text-bookit-dark">#{transaction.id.substring(0, 8)}...</h3>
                       <span className="inline-block px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
-                        {transaction.status || 'Completed'}
+                        Completed
                       </span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
@@ -272,10 +312,7 @@ const TransactionsList = () => {
             </p>
             {searchId ? (
               <button
-                onClick={() => {
-                  setSearchId('');
-                  setCurrentPage(1);
-                }}
+                onClick={() => handleSearchChange('')}
                 className="bg-gray-100 text-bookit-dark py-2 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors"
               >
                 Reset Pencarian
